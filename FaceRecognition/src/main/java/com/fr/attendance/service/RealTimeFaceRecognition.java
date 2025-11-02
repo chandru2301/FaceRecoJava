@@ -341,10 +341,13 @@ public class RealTimeFaceRecognition {
                                 log.info("📝 {} ({}) marked Present in Excel at: {}", 
                                         name, department, excelService.getExcelFilePath());
                             } else {
-                                log.warn("⚠️ Failed to mark attendance for {} - check Excel file permissions", name);
+                                // Attendance was not marked - either already marked or error occurred
+                                // Add to set anyway to prevent repeated attempts
+                                markedToday.add(name);
+                                log.debug("ℹ️ {} attendance was not marked (already marked or error)", name);
                             }
                         } else {
-                            log.info("ℹ️ {} already marked today, skipping", name);
+                            log.debug("ℹ️ {} already marked today (in-memory check), skipping", name);
                         }
                     } else {
                         name = "Unknown";

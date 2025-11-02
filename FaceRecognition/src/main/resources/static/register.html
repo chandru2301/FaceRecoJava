@@ -222,9 +222,144 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Toaster Styles */
+        .toaster-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: none;
+        }
+
+        .toast {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4), 0 0 20px rgba(118, 75, 162, 0.3);
+            min-width: 320px;
+            max-width: 400px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            opacity: 0;
+            transform: translateX(400px);
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            pointer-events: auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .toast::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.3));
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .toast.hide {
+            opacity: 0;
+            transform: translateX(400px);
+        }
+
+        .toast-icon {
+            font-size: 24px;
+            flex-shrink: 0;
+            animation: bounceIn 0.5s ease-out;
+        }
+
+        @keyframes bounceIn {
+            0% {
+                transform: scale(0);
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .toast-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .toast-title {
+            font-weight: 600;
+            font-size: 16px;
+            margin: 0;
+        }
+
+        .toast-message {
+            font-size: 14px;
+            opacity: 0.95;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .toast-close {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+            font-size: 18px;
+            padding: 0;
+        }
+
+        .toast-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        /* Progress bar animation */
+        .toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.5);
+            animation: progress 5s linear forwards;
+        }
+
+        @keyframes progress {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
     </style>
 </head>
 <body>
+    <!-- Toaster Container -->
+    <div class="toaster-container" id="toasterContainer"></div>
+
     <div class="container">
         <h1>🎓 Student Registration</h1>
         <p class="subtitle">Capture your face using webcam and register</p>
@@ -488,6 +623,9 @@
 
                 if (response.ok && data.success) {
                     showMessage('✅ Student registered successfully! Student ID: ' + data.student.id, 'success');
+                    // Show purple toaster notification
+                    showToast('🎉 Registration Successful!', 
+                        `Student "${data.student.name}" has been registered successfully!<br>Student ID: <strong>${data.student.id}</strong><br>Department: ${data.student.department}`);
                     form.reset();
                     retakePhoto();
                     if (stream) {
@@ -511,6 +649,43 @@
             messageDiv.className = `message ${type} show`;
             setTimeout(() => {
                 messageDiv.classList.remove('show');
+            }, 5000);
+        }
+
+        // Toaster Notification Function
+        function showToast(title, message) {
+            const toasterContainer = document.getElementById('toasterContainer');
+            
+            // Create toast element
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            
+            toast.innerHTML = `
+                <div class="toast-progress"></div>
+                <div class="toast-icon">✅</div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+            `;
+            
+            // Add to container
+            toasterContainer.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                toast.classList.add('hide');
+                setTimeout(() => {
+                    if (toast.parentElement) {
+                        toast.remove();
+                    }
+                }, 400);
             }, 5000);
         }
 

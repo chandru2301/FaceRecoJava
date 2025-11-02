@@ -5,10 +5,15 @@ import com.fr.attendance.service.FaceRecognitionService;
 import com.fr.attendance.service.PythonFaceRecognitionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -193,5 +198,36 @@ public class FaceRecognitionController {
         }
         
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Download the attendance Excel file.
+     * 
+     * @return Excel file as downloadable resource
+     */
+    @GetMapping("/attendance-file/download")
+    public ResponseEntity<Resource> downloadAttendanceFile() {
+        try {
+            String filePath = excelService.getExcelFilePath();
+            File file = new File(filePath);
+            
+            if (!file.exists()) {
+                log.warn("Attendance file does not exist: {}", filePath);
+                return ResponseEntity.notFound().build();
+            }
+            
+            Resource resource = new FileSystemResource(file);
+            
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, 
+                            "attachment; filename=\"" + file.getName() + "\"")
+                    .contentType(MediaType.parseMediaType(
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(resource);
+                    
+        } catch (Exception e) {
+            log.error("Error downloading attendance file: {}", e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }
