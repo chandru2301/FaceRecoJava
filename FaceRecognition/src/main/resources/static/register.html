@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Registration - Face Recognition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .video-container {
+            position: relative;
+            width: 100%;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            aspect-ratio: 4/3;
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .canvas-container {
+            display: none;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-capture {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-capture:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-capture:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-start {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-start:hover {
+            background: #218838;
+        }
+
+        .btn-stop {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-stop:hover {
+            background: #c82333;
+        }
+
+        .btn-submit {
+            width: 100%;
+            background: #764ba2;
+            color: white;
+            padding: 14px;
+        }
+
+        .btn-submit:hover {
+            background: #633a82;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(118, 75, 162, 0.4);
+        }
+
+        .btn-submit:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .preview-container {
+            display: none;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .preview-container.active {
+            display: block;
+        }
+
+        #preview {
+            max-width: 100%;
+            border-radius: 8px;
+            border: 3px solid #667eea;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎓 Student Registration</h1>
+        <p class="subtitle">Capture your face using webcam and register</p>
+
+        <div id="message" class="message"></div>
+
+        <form id="registrationForm">
+            <div class="form-group">
+                <label for="name">Student Name *</label>
+                <input type="text" id="name" name="name" required placeholder="Enter student name">
+            </div>
+
+            <div class="form-group">
+                <label for="department">Department *</label>
+                <input type="text" id="department" name="department" required placeholder="Enter department">
+            </div>
+
+            <div class="form-group">
+                <label>Face Image *</label>
+                <div class="video-container" id="videoContainer">
+                    <video id="video" autoplay playsinline></video>
+                </div>
+                
+                <div class="canvas-container">
+                    <canvas id="canvas"></canvas>
+                </div>
+
+                <div class="buttons">
+                    <button type="button" class="btn-start" id="startBtn">Start Camera</button>
+                    <button type="button" class="btn-stop" id="stopBtn" disabled>Stop Camera</button>
+                    <button type="button" class="btn-capture" id="captureBtn" disabled>Capture Photo</button>
+                </div>
+
+                <div class="preview-container" id="previewContainer">
+                    <p style="margin-bottom: 10px; font-weight: 600;">Captured Image:</p>
+                    <img id="preview" alt="Captured face">
+                    <button type="button" class="btn-capture" onclick="retakePhoto()" style="margin-top: 10px;">Retake</button>
+                </div>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Registering student...</p>
+            </div>
+
+            <button type="submit" class="btn-submit" id="submitBtn" disabled>Register Student</button>
+        </form>
+    </div>
+
+    <script>
+        let stream = null;
+        let capturedImage = null;
+
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const captureBtn = document.getElementById('captureBtn');
+        const submitBtn = document.getElementById('submitBtn');
+        const previewContainer = document.getElementById('previewContainer');
+        const preview = document.getElementById('preview');
+        const form = document.getElementById('registrationForm');
+        const messageDiv = document.getElementById('message');
+        const loadingDiv = document.getElementById('loading');
+
+        // Start camera function
+        async function startCamera() {
+            try {
+                // Check if getUserMedia is supported
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    showMessage('Camera access is not supported in this browser.', 'error');
+                    return;
+                }
+
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 640 },
+                        height: { ideal: 480 },
+                        facingMode: 'user'
+                    } 
+                });
+                video.srcObject = stream;
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                captureBtn.disabled = false;
+                showMessage('✅ Camera started. Please position your face in the frame.', 'success');
+                
+                // Wait for video to be ready
+                video.addEventListener('loadedmetadata', () => {
+                    console.log('Video ready. Dimensions:', video.videoWidth, 'x', video.videoHeight);
+                });
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                let errorMsg = 'Error accessing camera: ';
+                if (error.name === 'NotAllowedError') {
+                    errorMsg += 'Permission denied. Please allow camera access.';
+                } else if (error.name === 'NotFoundError') {
+                    errorMsg += 'No camera found. Please connect a camera.';
+                } else {
+                    errorMsg += error.message;
+                }
+                showMessage(errorMsg, 'error');
+            }
+        }
+
+        // Start camera button
+        startBtn.addEventListener('click', startCamera);
+
+        // Page load handler - check protocol and auto-start camera
+        window.addEventListener('load', () => {
+            // Check if accessed via file:// protocol
+            if (window.location.protocol === 'file:') {
+                // Show warning if accessed via file://
+                showMessage('⚠️ Please access this page through the server: http://localhost:8080/register.html', 'error');
+                const container = document.querySelector('.container');
+                const warningDiv = document.createElement('div');
+                warningDiv.style.cssText = 'background: #fff3cd; border: 2px solid #ffc107; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;';
+                warningDiv.innerHTML = `
+                    <h3 style="color: #856404; margin-bottom: 10px;">⚠️ Incorrect Access Method</h3>
+                    <p style="color: #856404; margin-bottom: 10px;">
+                        This page must be accessed through the Spring Boot server.
+                    </p>
+                    <p style="color: #856404; margin-bottom: 15px;">
+                        <strong>Correct URL:</strong><br>
+                        <a href="http://localhost:8080/register.html" style="color: #0066cc;">
+                            http://localhost:8080/register.html
+                        </a>
+                    </p>
+                    <p style="color: #856404; font-size: 14px;">
+                        Make sure your Spring Boot application is running on port 8080.
+                    </p>
+                `;
+                container.insertBefore(warningDiv, container.firstChild);
+                return;
+            }
+            
+            // Auto-start camera if accessed via HTTP
+            setTimeout(() => {
+                showMessage('Starting camera...', 'success');
+                startCamera();
+            }, 500);
+        });
+
+        // Stop camera
+        stopBtn.addEventListener('click', () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+                video.srcObject = null;
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                captureBtn.disabled = true;
+                showMessage('Camera stopped.', 'success');
+            }
+        });
+
+        // Capture photo
+        captureBtn.addEventListener('click', () => {
+            if (!stream || video.readyState !== video.HAVE_ENOUGH_DATA) {
+                showMessage('Please wait for camera to be ready.', 'error');
+                return;
+            }
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+
+            // Convert to blob with better error handling
+            canvas.toBlob((blob) => {
+                if (!blob) {
+                    showMessage('Failed to capture image. Please try again.', 'error');
+                    return;
+                }
+                
+                // Validate blob size (should be at least 1KB)
+                if (blob.size < 1024) {
+                    showMessage('Captured image is too small. Please try again.', 'error');
+                    return;
+                }
+
+                capturedImage = blob;
+                if (preview.src.startsWith('blob:')) {
+                    URL.revokeObjectURL(preview.src);
+                }
+                preview.src = URL.createObjectURL(blob);
+                previewContainer.classList.add('active');
+                submitBtn.disabled = false;
+                showMessage('✅ Photo captured! Review and submit.', 'success');
+                console.log('Image captured. Size:', blob.size, 'bytes, Type:', blob.type);
+            }, 'image/jpeg', 0.95);
+        });
+
+        function retakePhoto() {
+            capturedImage = null;
+            if (preview.src.startsWith('blob:')) {
+                URL.revokeObjectURL(preview.src);
+            }
+            previewContainer.classList.remove('active');
+            submitBtn.disabled = true;
+            showMessage('Please capture a new photo.', 'success');
+        }
+
+        // Form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById('name').value.trim();
+            const department = document.getElementById('department').value.trim();
+
+            // Validate form fields
+            if (!name) {
+                showMessage('Please enter student name.', 'error');
+                return;
+            }
+
+            if (!department) {
+                showMessage('Please enter department.', 'error');
+                return;
+            }
+
+            if (!capturedImage) {
+                showMessage('Please capture a photo first.', 'error');
+                return;
+            }
+
+            // Validate image blob
+            if (capturedImage.size === 0) {
+                showMessage('Captured image is invalid. Please capture again.', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('name', name);
+            formData.append('department', department);
+            formData.append('image', capturedImage, 'face.jpg');
+            
+            console.log('Submitting form:', {
+                name: name,
+                department: department,
+                imageSize: capturedImage.size,
+                imageType: capturedImage.type
+            });
+
+            loadingDiv.classList.add('show');
+            submitBtn.disabled = true;
+            form.style.opacity = '0.6';
+
+            try {
+                // Use absolute URL to work with server
+                const apiUrl = window.location.origin + '/api/students/register';
+                
+                console.log('Submitting to:', apiUrl);
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showMessage('✅ Student registered successfully! Student ID: ' + data.student.id, 'success');
+                    form.reset();
+                    retakePhoto();
+                    if (stream) {
+                        stopBtn.click();
+                    }
+                } else {
+                    showMessage('❌ Error: ' + (data.message || 'Registration failed'), 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('❌ Network error: ' + error.message, 'error');
+            } finally {
+                loadingDiv.classList.remove('show');
+                submitBtn.disabled = false;
+                form.style.opacity = '1';
+            }
+        });
+
+        function showMessage(text, type) {
+            messageDiv.textContent = text;
+            messageDiv.className = `message ${type} show`;
+            setTimeout(() => {
+                messageDiv.classList.remove('show');
+            }, 5000);
+        }
+
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+        });
+    </script>
+</body>
+</html>
